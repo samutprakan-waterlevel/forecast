@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Water Level Forecast - Samut Prakan Deep Learning</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
+    <script src="https://api.windy.com/assets/map-forecast/libBoot.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Kanit', sans-serif;
+            color: #bef0f5;
+            background: linear-gradient(180deg, #a6e3f5 0%,#74b0b2 50% , #137584 75%,#26444e 100%);
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Background Effects */
+        .bubbles {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .bubble {
+            position: absolute;
+            bottom: -120px;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.1) 70%);
+            border: 0.5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3), inset -2px -2px 5px rgba(255, 255, 255, 0.2);
+            animation: rise linear infinite;
+        }
+
+        @keyframes rise {
+            to {
+                transform: translateY(-120vh);
+                opacity: 50;
+            }
+        }
+
+        /* Header */
+        header {
+            padding: 15px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        header h2 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: 700;
+            text-shadow: 0 4px 6px rgba(145, 175, 189, 0.3);
+            background: linear-gradient(to bottom, #023e54 0%, #6781a0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            position: relative;
+            display: inline-block;
+        }
+
+        header h2::after {
+            content: '✨';
+            position: absolute;
+            top: -10px;
+            right: -25px;
+            font-size: 20px;
+            animation: blink 1s infinite alternate;
+            -webkit-text-fill-color: initial;
+        }
+
+        header h2::before {
+            content: '✨';
+            position: absolute;
+            bottom: 0;
+            left: -25px;
+            font-size: 18px;
+            animation: blink 1.2s infinite alternate-reverse;
+            -webkit-text-fill-color: initial;
+        }
+
+        @keyframes blink {
+            from {
+                opacity: 0.2;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+
+        header p {
+            color: #243947;
+            margin: 4px 0 0 0;
+            font-size: 20px;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+
+        /* Main Layout */
+        #container {
+            display: flex;
+            gap: 16px;
+            padding: 0 16px 16px 16px;
+            height: calc(100vh - 170px);
+            position: relative;
+            z-index: 5;
+        }
+
+        #left-side {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #top-row {
+            display: flex;
+            gap: 12px;
+            height: 85px;
+        }
+
+        /* Control Boxes */
+        .box-legend-new {
+            flex: 2.5;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 10px 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .box-layers-new {
+            flex: 1.5 !important;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 10px 15px !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px !important;
+        }
+
+        .box-layers-new div {
+            grid-column: span 2;
+        }
+
+        .layer-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: #1e3a8a;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .layer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        /* Map and Overlays */
+        #windy {
+            flex: 1;
+            border-radius: 18px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        /* ใส่เพิ่มใน <style> */
+        #windy-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* ต้องใส่ !important และเลขสูงๆ เพื่อให้อยู่เหนือ Layer ของ Leaflet */
+            z-index: 999999 !important; 
+            background: white;
+            display: none;
+            border-radius: 18px; /* ให้ขอบมนเท่ากับแผนที่ */
+        } 
+
+        /* Info Panel */
+        #info-panel {
+            flex: 1;
+            background: rgba(255, 255, 255, .85);
+            color: #0f172a;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 0 30px rgba(0, 0, 0, .25);
+            border-radius: 18px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* Components */
+        .legend-bar {
+            display: flex;
+            border-radius: 6px;
+            overflow: hidden;
+            height: 28px;
+            border: 1px solid #ddd;
+        }
+
+        .legend-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 400;
+            color: white;
+            text-align: center;
+        }
+
+        .btn-toggle {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 5px;
+            cursor: pointer;
+            font-family: 'Kanit';
+            font-size: 12px;
+            transition: 0.2s;
+        }
+
+        .btn-toggle.active {
+            background: #0ea5e9;
+            color: white;
+            border-color: #0284c7;
+        }
+
+        .btn {
+            width: 100%;
+            margin-top: 12px;
+            padding: 12px;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #0369a1, #0ea5e9);
+            font-weight: 600;
+            cursor: pointer;
+            color: white;
+            transition: 0.3s;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .level {
+            font-size: 14px;
+            margin: 6px 0;
+        }
+
+        .bank {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        .bed {
+            color: #0ea5e9;
+            font-weight: 600;
+        }
+
+        .small {
+            font-size: 13px;
+            opacity: .8;
+        }
+
+        /* Modal */
+        #chart-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            padding: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #chart-content {
+            background: white;
+            width: 95%;
+            max-width: 1200px;
+            height: 80vh;
+            border-radius: 24px;
+            padding: 30px;
+            position: relative;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        #close-chart {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 30px;
+            cursor: pointer;
+            color: #64748b;
+            border: none;
+            background: none;
+        }
+        /* บังคับให้หน้าต่างทับอยู่ด้านบนเสมอ */
+        #windy-overlay {
+        pointer-events: all !important;
+        }
+
+        /* สำหรับหน้าจอที่มีความกว้างน้อยกว่า 768px (มือถือและแท็บเล็ตแนวตั้ง) */
+@media (max-width: 768px) {
+    body {
+        overflow-y: auto; /* ยอมให้เลื่อนขึ้นลงได้บนมือถือ */
+        height: auto;
+    }
+
+    header h2 {
+        font-size: 22px; /* ลดขนาดหัวข้อลง */
+    }
+
+    #container {
+        flex-direction: column; /* เปลี่ยนกล่องจากซ้าย-ขวา เป็น บน-ล่าง */
+        height: auto; /* ให้ความสูงยืดตามเนื้อหา */
+        padding: 10px;
+    }
+
+    #left-side {
+        order: 1; /* ให้แผนที่อยู่บน */
+        height: 400px; /* บังคับความสูงแผนที่บนมือถือ */
+    }
+
+    #info-panel {
+        order: 2; /* ให้ข้อมูลอยู่ล่าง */
+        width: auto; /* ให้กว้างเต็มจอ */
+        margin-bottom: 20px;
+    }
+
+    #top-row {
+        flex-direction: column; /* เลเยอร์ปุ่มควบคุมให้เรียงแถวเดียว */
+        height: auto;
+    }
+
+    .box-legend-new, .box-layers-new {
+        flex: none;
+        width: auto;
+    }
+
+    /* ปรับให้ Modal กราฟดูง่ายขึ้นบนมือถือ */
+    #chart-content {
+        width: 100%;
+        height: 70vh;
+        padding: 15px;
+    }
+}
+    </style>
+</head>
+
+<body>
+    <div class="bubbles" id="bubbles"></div>
+
+    <header>
+        <h2>พยากรณ์ระดับน้ำรายวันสูงสุดล่วงหน้าจังหวัดสมุทรปราการ</h2>
+        <p>วิเคราะห์โดยโครงข่ายประสาทเทียมเชิงลึก</p>
+    </header>
+
+    <div id="container">
+        <div id="left-side">
+            <div id="top-row">
+                <div class="box-legend-new">
+                    <div style="margin-bottom: 5px; font-weight: 600; font-size: 13px; color: #1e3a8a;">📉(% ความจุลำน้ำ)</div>
+                    <div class="legend-bar">
+                        <div style="background: #fb923c;" class="legend-item">น้อยวิกฤต (&le;10)</div>
+                        <div style="background: #fde047; color: #333;" class="legend-item">น้อย (10-30)</div>
+                        <div style="background: #22c55e;" class="legend-item">ปกติ (30-70)</div>
+                        <div style="background: #3b82f6;" class="legend-item">มาก (70-100)</div>
+                        <div style="background: #ef4444;" class="legend-item">ล้นตลิ่ง (>100)</div>
+                    </div>
+                </div>
+
+                <div class="box-layers-new">
+                    <div class="layer-grid">
+                        <button id="tog-windy" class="btn-toggle active" onclick="toggleWindyOverlay()">Windy.com</button>
+                        <button id="tog-gistda" class="btn-toggle active" onclick="toggleGistdaLayer()">แผนที่น้ำท่วมซ้ำซาก</button>
+                        <button id="btn-osm" class="btn-toggle" onclick="changeBaseMap('osm')">แผนที่ถนน</button>
+                        <button id="btn-sat" class="btn-toggle" onclick="changeBaseMap('satellite')">แผนที่ดาวเทียม</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="windy">
+                  <div id="windy-overlay">
+                      <button onclick="closeWindy()" style="position:absolute; top:15px; left: 15px; z-index: 1000001; padding:10px 20px; background:#ef4444; color:white; border:none; border-radius:8px; cursor:pointer; font-family: 'Kanit'; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                      ✕ ปิด
+                      </button>
+                      <iframe id="windy-frame" width="100%" height="100%" frameborder="0"></iframe>
+                  </div>
+              </div>
+          </div>
+
+        <div id="info-panel">
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="st-search" placeholder="🔍 ค้นหาชื่อสถานี..." style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; font-family: 'Kanit'; box-sizing: border-box;">
+                <div id="search-results" style="background: white; border-radius: 0 0 10px 10px; max-height: 150px; overflow-y: auto; display: none; position: absolute; width: calc(100% - 40px); z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
+            </div>
+            <hr style="border:0; border-top:1px solid #e2e8f0; margin:10px 0;">
+            <div id="info-empty" style="text-align: center; padding-top: 50px; color: #64748b;">📍 คลิกที่สถานีบนแผนที่</div>
+            <div id="info-content" style="display:none">
+                <h3 id="st-name" style="margin-top:0; color:#0369a1; font-size: 20px;"></h3>
+                <div class="small">รหัสสถานี: <span id="st-code"></span></div>
+                <div id="info-date" class="small" style="color:#0369a1; font-weight:600; margin-top:5px;"></div>
+                <hr style="border:0; border-top:1px solid #e2e8f0; margin:15px 0;">
+
+                <div style="background: rgba(255,255,255,0.6); padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #e2e8f0;">
+                    <div class="level">สถานะความเสี่ยง: <b id="st-status-text"></b></div>
+                    <div class="level">ระดับน้ำ (ม.รทก.): <b id="st-water-val" style="color:#1e40af;">-</b></div>
+                    <div class="level">ความจุลำน้ำ: <b id="st-pct-text" style="font-size: 20px; color:#1e40af;"></b></div>
+                </div>
+
+                <div class="level bank">ระดับตลิ่ง: <span id="st-bank"></span> ม. (รทก.)</div>
+                <div class="level bed">ระดับท้องน้ำ: <span id="st-bed"></span> ม. (รทก.)</div>
+                <div class="level small">โมเดลที่ใช้: <b id="st-model" style="color:#0ea5e9;"></b></div>
+
+                <button class="btn" onclick="openChartModal()" style="font-size: 16px; height: 55px; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3);">
+                    📊 ดูพยากรณ์ล่วงหน้า
+                </button>
+
+                <button class="btn" style="background:#334155; margin-top:20px;" onclick="openWindy()">🌧 ดูสภาพอากาศเพิ่มเติม</button>
+
+                <div style="margin-top:20px;">
+                    <label class="small">ความโปร่งแผนที่น้ำท่วมซ้ำซาก</label>
+                    <input type="range" min="0" max="1" step="0.1" value="0.5" style="width:100%" oninput="updateFloodOpacity(this.value)">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="chart-modal">
+        <div id="chart-content">
+            <button id="close-chart" onclick="closeChartModal()">&times;</button>
+            <h3 id="modal-st-name" style="margin: 0 0 10px 0; color: #0369a1;"></h3>
+            <div style="height: 85%;">
+                <canvas id="chart"></canvas>
+            </div>
+            <div class="small" style="text-align:center; margin-top:15px; color:#64748b; font-family: 'Kanit', sans-serif;">
+                🖱️ คลิกที่จุดบนกราฟเพื่อดูรายละเอียดของวันนั้นๆ | ลากเพื่อเลื่อนซ้าย-ขวา
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global Variables
+        let currentChartData = [];
+        let currentStation = null, chart = null, floodWMTS, provinceLayer, windyStore;
+        let map;
+        let baseLayers = {};
+        let activeBaseLayer = null; 
+        let allStations = [];
+
+        const options = {
+            key: 'myPD7Kp6ct2f3k0X6jxKDPYmQy1f5rs6',
+            lat: 13.62,
+            lon: 100.70,
+            zoom: 10,
+            verbose: false
+        };
+
+        // Initialize Windy Map
+        windyInit(options, windyAPI => {
+            map = windyAPI.map;
+            windyStore = windyAPI.store;
+
+            windyStore.set('overlay', 'rain');
+
+            floodWMTS = L.tileLayer("https://gistdaportal.gistda.or.th/data/rest/services/FL_Flood/FL_RepeatedFlooding_GISTDA_50k_Y2005_Y2016/MapServer/WMTS/tile/1.0.0/FL_Flood_FL_RepeatedFlooding_GISTDA_50k_Y2005_Y2016/default/GoogleMapsCompatible/{z}/{y}/{x}.png", {
+                opacity: 0.5,
+                zIndex: 500
+            }).addTo(map);
+
+            const searchInput = document.getElementById('st-search');
+            const searchResults = document.getElementById('search-results');
+
+            fetch('samutprakan.geojson').then(r => r.json()).then(geoData => {
+                provinceLayer = L.geoJSON(geoData, {
+                    style: { color: "#ff4500", weight: 4, fillOpacity: 0, dashArray: "10, 10" },
+                    interactive: false
+                }).addTo(map);
+            });
+
+            fetch('stations_forecast_full.json').then(r => r.json()).then(data => {
+                allStations = Object.values(data);
+                allStations.forEach(st => {
+                    const latestData = st.test[st.test.length - 1];
+                    const marker = L.circleMarker([st.lat, st.lon], {
+                        radius: 11,
+                        color: '#fff',
+                        weight: 2,
+                        fillColor: getColorByStatus(latestData.Status),
+                        fillOpacity: 0.9
+                    }).addTo(map);
+
+                    st.marker = marker;
+                    marker.on("click", () => openStationPanel(st));
+                });
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                const val = e.target.value.toLowerCase();
+                searchResults.innerHTML = '';
+                if (!val) { searchResults.style.display = 'none'; return; }
+
+                const matched = allStations.filter(s =>
+                    s.station_th.toLowerCase().includes(val) ||
+                    s.station.toLowerCase().includes(val)
+                );
+
+                matched.forEach(s => {
+                    const div = document.createElement('div');
+                    div.style.padding = '8px 12px';
+                    div.style.cursor = 'pointer';
+                    div.style.borderBottom = '1px solid #eee';
+                    div.innerHTML = `<b>${s.station}</b> - ${s.station_th}`;
+                    div.onclick = () => {
+                        map.flyTo([s.lat, s.lon], 13);
+                        openStationPanel(s);
+                        searchResults.style.display = 'none';
+                        searchInput.value = s.station_th;
+                    };
+                    searchResults.appendChild(div);
+                });
+                searchResults.style.display = matched.length ? 'block' : 'none';
+            });
+        });
+
+        // Layer Controls Functions
+        function toggleWindyOverlay() {
+            const btn = document.getElementById('tog-windy');
+            const isRain = windyStore.get('overlay') === 'rain';
+
+            if (!isRain) {
+                if (activeBaseLayer) {
+                    map.removeLayer(activeBaseLayer);
+                    activeBaseLayer = null;
+                }
+                document.getElementById('btn-osm').classList.remove('active');
+                document.getElementById('btn-sat').classList.remove('active');
+                windyStore.set('overlay', 'rain');
+                btn.classList.add('active');
+            } else {
+                windyStore.set('overlay', 'none');
+                btn.classList.remove('active');
+            }
+        }
+
+        function changeBaseMap(type) {
+            if (activeBaseLayer) {
+                map.removeLayer(activeBaseLayer);
+                activeBaseLayer = null;
+            }
+
+            document.getElementById('btn-osm').classList.remove('active');
+            document.getElementById('btn-sat').classList.remove('active');
+            document.getElementById('tog-windy').classList.remove('active');
+
+            windyStore.set('overlay', 'none');
+
+            if (type === 'osm') {
+                activeBaseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                document.getElementById('btn-osm').classList.add('active');
+            } else if (type === 'satellite') {
+                activeBaseLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+                document.getElementById('btn-sat').classList.add('active');
+            }
+        }
+
+        function openWindy() {
+    if (!currentStation) {
+        alert("กรุณาเลือกสถานีบนแผนที่ก่อน");
+        return;
+    }
+
+    // 1. ตรวจสอบว่ามี Overlay อยู่หรือยัง ถ้าไม่มีให้สร้างใหม่เลย (กันโดนลบ)
+    let overlay = document.getElementById("windy-overlay");
+    if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "windy-overlay";
+        // ใส่ Style บังคับให้ทับหน้าจอ
+        Object.assign(overlay.style, {
+            position: "absolute",
+            inset: "0",
+            zIndex: "999999",
+            background: "white",
+            borderRadius: "18px",
+            display: "none"
+        });
+        
+        // ใส่ปุ่มปิดและ iframe เข้าไปข้างใน
+        overlay.innerHTML = `
+            <button onclick="closeWindy()" style="position:absolute; top:12px; left:12px; z-index: 1000001; padding:10px 25px; background:#ef4444; color:white; border:none; border-radius:8px; cursor:pointer; font-family: 'Kanit'; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                ✕ ปิด
+            </button>
+            <iframe id="windy-frame" width="100%" height="100%" frameborder="0"></iframe>
+        `;
+        document.getElementById("windy").appendChild(overlay);
+    }
+
+    const frame = document.getElementById("windy-frame");
+    const url = `https://embed.windy.com/embed2.html?lat=${currentStation.lat}&lon=${currentStation.lon}&zoom=11&level=surface&overlay=rain&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&detail=true&metricWind=default&metricTemp=default&radarRange=-1`;
+
+    // 2. แสดงผล
+    frame.src = url;
+    overlay.style.display = "block";
+}
+
+function closeWindy() {
+    const overlay = document.getElementById("windy-overlay");
+    if (overlay) {
+        overlay.style.display = "none";
+        document.getElementById("windy-frame").src = "";
+    }
+}
+        function toggleGistdaLayer() {
+            const btn = document.getElementById('tog-gistda');
+            if (map.hasLayer(floodWMTS)) {
+                map.removeLayer(floodWMTS);
+                btn.classList.remove('active');
+            } else {
+                map.addLayer(floodWMTS);
+                btn.classList.add('active');
+            }
+        }
+
+        function updateFloodOpacity(v) {
+            if (floodWMTS) floodWMTS.setOpacity(v);
+        }
+
+        // Station Panel & Data Functions
+        function openStationPanel(st) {
+            currentStation = st;
+            const latest = [...st.test].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+            document.getElementById("info-empty").style.display = "none";
+            document.getElementById("info-content").style.display = "block";
+            document.getElementById("info-date").innerText = "ข้อมูลล่าสุด: " + latest.date;
+            document.getElementById("st-name").innerText = st.station_th;
+            document.getElementById("st-code").innerText = st.station;
+            document.getElementById("st-bank").innerText = st.bank_level_m.toFixed(2);
+            document.getElementById("st-bed").innerText = st.bed_level_m.toFixed(2);
+            document.getElementById("st-model").innerText = st.best_model;
+            document.getElementById("st-status-text").innerText = latest.Status;
+
+            const waterVal = latest.Actual !== undefined && latest.Actual !== null ? latest.Actual : latest.Predicted;
+            document.getElementById("st-water-val").innerText = waterVal.toFixed(2) + " ม.";
+            document.getElementById("st-pct-text").innerText = latest["Predicted_%"].toFixed(2) + " %";
+            document.getElementById("st-status-text").style.color = getColorByStatus(latest.Status);
+        }
+
+        function getColorByStatus(s) {
+            if (!s) return "#ccc";
+            if (s.includes("ล้นตลิ่ง")) return "#ef4444";
+            return s.includes("น้ำมาก") ? "#3b82f6" : s.includes("ปกติ") ? "#22c55e" : s.includes("น้อยวิกฤต") ? "#fb923c" : "#fde047";
+        }
+
+        // Chart Modal Functions
+        function openChartModal() {
+            if (!currentStation) return;
+            document.getElementById("chart-modal").style.display = "flex";
+            document.getElementById("modal-st-name").innerText = "พยากรณ์ระดับน้ำสถานี: " + currentStation.station_th;
+            drawChart(currentStation);
+        }
+
+        function closeChartModal() {
+            document.getElementById("chart-modal").style.display = "none";
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === "Escape") closeChartModal();
+        });
+
+        function drawChart(st) {
+            const ctx = document.getElementById("chart").getContext("2d");
+            if (chart) chart.destroy();
+
+            const sortedData = [...st.test].sort((a, b) => new Date(a.date) - new Date(b.date));
+            const labels = sortedData.map(d => d.date);
+            currentChartData = sortedData;
+
+            const actual = sortedData.map(d => (d.date <= "2025-10-31") ? d.Actual : null);
+            const forecast = sortedData.map(d => (d.date >= "2025-11-01") ? d.Predicted : null);
+
+            const bank = st.bank_level_m;
+            const bed = st.bed_level_m;
+
+            chart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                            label: "ระดับน้ำจริง",
+                            data: actual,
+                            borderColor: "#1e40af",
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            hitRadius: 10,
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: "พยากรณ์ล่วงหน้า (รายวัน)",
+                            data: forecast,
+                            borderColor: "#f97316",
+                            backgroundColor: "#f97316",
+                            pointRadius: 5,
+                            hitRadius: 10,
+                            showLine: true,
+                            borderDash: [5, 5],
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (evt, elements) => {
+                        if (!elements.length) return;
+                        const idx = elements[0].index;
+                        const d = currentChartData[idx];
+                        if (!d) return;
+
+                        document.getElementById("info-date").innerText = "ข้อมูลวันที่: " + d.date;
+                        document.getElementById("st-status-text").innerText = d.Status;
+                        document.getElementById("st-status-text").style.color = getColorByStatus(d.Status);
+
+                        const waterVal = d.Actual !== undefined && d.Actual !== null ? d.Actual : d.Predicted;
+                        document.getElementById("st-water-val").innerText = waterVal.toFixed(2) + " ม.";
+
+                        const pct = d["Predicted_%"] !== undefined ? d["Predicted_%"] : ((waterVal - bed) / (bank - bed) * 100);
+                        document.getElementById("st-pct-text").innerText = pct.toFixed(2) + " %";
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const idx = context.dataIndex;
+                                    const d = currentChartData[idx];
+                                    const label = context.dataset.label || '';
+                                    const val = context.parsed.y;
+                                    let lines = [`${label}: ${val.toFixed(2)} ม.`];
+                                    if (d) {
+                                        lines.push(`ความเสี่ยง: ${d.Status}`);
+                                        const pct = d["Predicted_%"] !== undefined ? d["Predicted_%"] : ((val - bed) / (bank - bed) * 100);
+                                        lines.push(`ความจุลำน้ำ: ${pct.toFixed(2)} %`);
+                                    }
+                                    return lines;
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    family: 'Kanit',
+                                    size: 14
+                                }
+                            }
+                        },
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'x'
+                            },
+                            zoom: {
+                                wheel: {
+                                    enabled: true
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x'
+                            }
+                        },
+                        annotation: {
+                            annotations: {
+                                lineBank: {
+                                    type: 'line',
+                                    yMin: bank,
+                                    yMax: bank,
+                                    borderColor: 'red',
+                                    borderWidth: 2,
+                                    borderDash: [6, 6],
+                                    label: {
+                                        display: true,
+                                        content: 'ระดับตลิ่ง ' + bank,
+                                        position: 'end',
+                                        backgroundColor: 'red',
+                                        font: {
+                                            family: 'Kanit'
+                                        }
+                                    }
+                                },
+                                lineBed: {
+                                    type: 'line',
+                                    yMin: bed,
+                                    yMax: bed,
+                                    borderColor: 'black',
+                                    borderWidth: 2,
+                                    borderDash: [6, 6],
+                                    label: {
+                                        display: true,
+                                        content: 'ระดับท้องน้ำ ' + bed,
+                                        position: 'end',
+                                        backgroundColor: 'black',
+                                        font: {
+                                            family: 'Kanit'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'category',
+                            min: "2025-10-25",
+                            ticks: {
+                                font: {
+                                    family: 'Kanit'
+                                },
+                                autoSkip: true,
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        },
+                        y: {
+                            min: bed - 0.2,
+                            suggestedMax: bank + 1.0,
+                            title: {
+                                display: true,
+                                text: 'ระดับน้ำ (ม.รทก.)',
+                                font: {
+                                    family: 'Kanit'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Bubble Animation Generator
+        const bc = document.getElementById("bubbles");
+        for (let i = 0; i < 20; i++) {
+            const b = document.createElement("div");
+            b.className = "bubble";
+            b.style.width = b.style.height = (10 + Math.random() * 35) + "px";
+            b.style.left = Math.random() * 100 + "%";
+            b.style.animationDuration = (5 + Math.random() * 10) + "s";
+            b.style.animationDelay = Math.random() * 4 + "s";
+            bc.appendChild(b);
+        }
+    </script>
+</body>
+
+</html>
+
+
