@@ -400,15 +400,25 @@
             padding: 16px;
         }
 
-        #chart-content canvas {
-            width: 100% !important;
-            height: auto !important;
-            aspect-ratio: 16 / 9;   /* บังคับให้เป็นแนวนอน */
+        #chart-content {
+            width: 94%;
+            max-width: 1000px;
+            height: 85vh;   /* กำหนดความสูงจริง */
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+        .chart-wrapper {
+            flex: 1;
+            position: relative;
         }
 
+        .chart-wrapper canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
 
     }
-
 
 
     </style>
@@ -447,6 +457,15 @@
 
             <div id="windy" style="position: relative;">
                 
+            </div>
+        </div>
+
+        <div id="chart-content">
+            <button id="close-chart">×</button>
+            <h3 id="modal-st-name"></h3>
+
+            <div class="chart-wrapper">
+            <canvas id="chart"></canvas>
             </div>
         </div>
 
@@ -829,7 +848,7 @@ floodWMTS = L.tileLayer(
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio: false,
 
                     interaction: {
                         mode: 'nearest',
