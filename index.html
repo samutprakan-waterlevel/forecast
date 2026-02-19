@@ -341,7 +341,7 @@
     /* ===== Base ===== */
     body {
         margin: 0;
-        overflow: hidden; /* กันเด้ง */
+        overflow: hidden;
     }
 
     header {
@@ -359,33 +359,28 @@
 
     /* ===== Main layout ===== */
     #container {
-        position: relative;
+        display: flex;
         flex-direction: column;
+        height: 65vh;
         padding: 0;
-        height: 100vh;
     }
 
     #left-side {
         flex: none;
-        height: 100%;
-        position: relative;
+        display: flex;
+        flex-direction: column;
     }
 
-    /* ===== Floating legend + layer control ===== */
+    /* ===== Top control row (ไม่ลอย) ===== */
     #top-row {
         display: flex;
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        right: 10px;
         gap: 8px;
+        padding: 8px;
         height: auto;
-        z-index: 8000;
     }
 
     .box-legend-new,
     .box-layers-new {
-        flex: 1;
         padding: 8px 10px;
         border-radius: 12px;
     }
@@ -396,7 +391,6 @@
 
     .legend-item {
         font-size: 10px;
-        padding: 0 2px;
     }
 
     .btn-toggle {
@@ -406,8 +400,8 @@
 
     /* ===== Map ===== */
     #windy {
-        height: 48vh;          /* ⬅️ ลดจากเดิม */
-        min-height: 300px;
+        height: 40vh;          /* ⬅️ เล็กลง */
+        min-height: 260px;
         border-radius: 0;
     }
 
@@ -417,7 +411,7 @@
         left: 0;
         bottom: -48vh;
         width: 100%;
-        height: 48vh;          /* ⬅️ ไม่เต็มจอ */
+        height: 48vh;
         padding: 14px;
         box-sizing: border-box;
 
@@ -442,7 +436,8 @@
 
     #chart-content {
         width: 100%;
-        height: 48vh;          /* ⬅️ กราฟไม่เต็มจอ */
+        height: 40vh;          /* ⬅️ เท่ากับ windy */
+        min-height: 260px;
         padding: 12px;
         border-radius: 20px 20px 0 0;
     }
@@ -451,8 +446,8 @@
         width: 100% !important;
         height: 100% !important;
     }
-
 }
+
 
     </style>
 </head>
