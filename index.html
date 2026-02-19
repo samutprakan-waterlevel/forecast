@@ -335,24 +335,35 @@
             transition: all 0.3s ease;
         }
 
-        /* =========================================
-   MOBILE APP EXPERIENCE (<= 768px)
-   ========================================= */
-@media (max-width: 768px) {
+ @media (max-width: 768px) {
 
-    /* ----- Layout control ----- */
+    /* ===== Base ===== */
     body {
-        overflow: hidden;
+        margin: 0;
+        overflow: hidden; /* สำคัญมาก กันเด้ง */
     }
 
+    header {
+        padding: 10px;
+    }
+
+    header h2 {
+        font-size: 18px;
+    }
+
+    header p {
+        font-size: 14px;
+    }
+
+    /* ===== Main layout ===== */
     #container {
         flex-direction: column;
+        height: calc(100vh - 90px); /* หัก header */
         padding: 0;
-        height: 100vh;
     }
 
     #left-side {
-        flex: 1;
+        flex: none;
         height: 100%;
     }
 
@@ -360,33 +371,38 @@
         display: none;
     }
 
-    /* ----- Map full screen ----- */
+    /* ===== Map ===== */
     #windy {
-        height: 100vh;
+        height: 100%;
+        width: 100%;
         border-radius: 0;
     }
 
-    /* ----- Info panel → bottom sheet ----- */
+    /* ===== Info panel → bottom sheet ===== */
     #info-panel {
         position: fixed;
-        bottom: -100%;
         left: 0;
+        bottom: -70vh;
         width: 100%;
-        height: 65vh;
-        background: white;
+        max-width: 100%;
+        height: 70vh;
+        padding: 16px;
+        box-sizing: border-box;
+
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px 20px 0 0;
+
         z-index: 9000;
-        border-radius: 22px 22px 0 0;
-        box-shadow: 0 -10px 30px rgba(0,0,0,.35);
-        transition: bottom 0.35s ease;
+        transition: transform 0.3s ease, bottom 0.3s ease;
         overflow-y: auto;
-        padding-bottom: 40px;
     }
 
     #info-panel.show {
         bottom: 0;
     }
 
-    /* ----- Chart fullscreen (landscape-friendly) ----- */
+    /* ===== Chart modal ===== */
     #chart-modal {
         padding: 0;
     }
@@ -395,49 +411,15 @@
         width: 100%;
         height: 100vh;
         border-radius: 0;
-        padding: 15px;
+        padding: 12px;
     }
 
     #chart {
         width: 100% !important;
-        height: 100% !important;
+        height: calc(100% - 40px) !important;
     }
 
-    /* ----- Floating toggle button ----- */
-    #mobile-toggle {
-        position: fixed;
-        right: 16px;
-        bottom: 100px;
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background: #0284c7;
-        color: white;
-        font-size: 22px;
-        border: none;
-        z-index: 9999;
-        box-shadow: 0 6px 18px rgba(0,0,0,.35);
-        cursor: pointer;
-    }
-
-    /* ----- View state control ----- */
-    body.mobile-map #windy {
-        display: block;
-    }
-
-    body.mobile-map #chart-modal {
-        display: none;
-    }
-
-    body.mobile-chart #windy {
-        display: none;
-    }
-
-    body.mobile-chart #chart-modal {
-        display: flex;
-    }
 }
-
 
     </style>
 </head>
@@ -589,8 +571,6 @@
         มิใช่ข้อมูลตรวจวัดสถานะปัจจุบันแบบเรียลไทม์
     </p>
     
-        <!-- Mobile toggle Map ↔ Chart -->
-    <button id="mobile-toggle" onclick="toggleMobileView()" style="position: fixed; bottom: 5px; right: 20px; z-index: 1000; background: linear-gradient(135deg, #e2f5ff, #7c95a1); color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px;">📊</button> 
 
     <div id="chart-modal">
         <div id="chart-content">
@@ -1062,73 +1042,33 @@ floodWMTS = L.tileLayer(
             bc.appendChild(b);
         }
 
-/* ============================
-   MOBILE VIEW STATE
-   ============================ */
-let mobileView = "map";
+// === Mobile: เปิด info panel แบบ bottom sheet ===
+const originalOpenStationPanel = openStationPanel;
 
-/* ----- initial state ----- */
-if (window.innerWidth <= 768) {
-    document.body.classList.add("mobile-map");
-}
-
-/* ----- Toggle Map ↔ Chart ----- */
-function toggleMobileView() {
-    if (mobileView === "map") {
-        mobileView = "chart";
-        document.body.classList.remove("mobile-map");
-        document.body.classList.add("mobile-chart");
-    } else {
-        mobileView = "map";
-        document.body.classList.remove("mobile-chart");
-        document.body.classList.add("mobile-map");
-    }
-}
-
-/* ----- Swipe gesture ----- */
-let touchStartX = 0;
-
-document.addEventListener("touchstart", e => {
-    touchStartX = e.touches[0].clientX;
-}, { passive: true });
-
-document.addEventListener("touchend", e => {
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    if (Math.abs(dx) > 80) {
-        toggleMobileView();
-    }
-}, { passive: true });
-
-/* ----- Open info panel on station select ----- */
-const _openStationPanel = openStationPanel;
 openStationPanel = function(st) {
-    _openStationPanel(st);
+    originalOpenStationPanel(st);
+
     if (window.innerWidth <= 768) {
-        document.getElementById("info-panel").classList.add("show");
+        const panel = document.getElementById("info-panel");
+        panel.classList.add("show");
     }
 };
 
-/* ----- Close info panel by swipe down ----- */
-let sheetStartY = 0;
-const infoPanel = document.getElementById("info-panel");
+// === ปิด info panel ด้วย swipe ลง ===
+let startY = 0;
+const panel = document.getElementById("info-panel");
 
-infoPanel.addEventListener("touchstart", e => {
-    sheetStartY = e.touches[0].clientY;
+panel.addEventListener("touchstart", e => {
+    startY = e.touches[0].clientY;
 }, { passive: true });
 
-infoPanel.addEventListener("touchend", e => {
-    const dy = e.changedTouches[0].clientY - sheetStartY;
-    if (dy > 120) {
-        infoPanel.classList.remove("show");
+panel.addEventListener("touchend", e => {
+    const dy = e.changedTouches[0].clientY - startY;
+    if (dy > 100) {
+        panel.classList.remove("show");
     }
 }, { passive: true });
 
-/* ----- Resize chart on rotate ----- */
-window.addEventListener("orientationchange", () => {
-    setTimeout(() => {
-        if (chart) chart.resize();
-    }, 300);
-});
 
     </script>
 </body>
