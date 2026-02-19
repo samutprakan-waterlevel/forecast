@@ -335,67 +335,85 @@
             transition: all 0.3s ease;
         }
 
- /* ===MOBILE APP EXPERIENCE (<= 768px)=== */
+/* =======================================================
+   MOBILE APP EXPERIENCE (<= 768px) – FINAL CLEAN VERSION
+   ======================================================= */
+
 @media (max-width: 768px) {
 
-    /* ===== Base ===== */
-    body {
+    /* ===== RESET & SAFETY ===== */
+    html, body {
         margin: 0;
-        overflow: hidden;
+        padding: 0;
+        max-width: 100%;
+        overflow-x: hidden;   /* ❗ ห้ามเลื่อนซ้าย–ขวา */
     }
 
+    body {
+        background: #f5f7fb;
+    }
+
+    /* ===== HEADER ===== */
     header {
-        padding: 10px;
+        padding: 10px 12px;
+        text-align: center;
     }
 
     header h2 {
         font-size: 18px;
         line-height: 1.3;
+        margin-bottom: 4px;
     }
 
     header p {
         font-size: 14px;
+        margin: 0;
     }
 
-    /* ===== Layout ===== */
+    /* ===== MAIN CONTAINER ===== */
     #container {
         display: flex;
         flex-direction: column;
+        gap: 10px;
         height: 100vh;
         padding: 0;
-        gap: 8px;
-        align-items: center;   /* ⬅️ จัดกลาง */
     }
 
     #left-side {
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        width: 100%;
-        align-items: center;   /* ⬅️ กล่องอยู่กลาง */
+        gap: 10px;
     }
 
-    /* ===== Top row → vertical ===== */
+    /* ===== TOP ROW → STACKED ===== */
     #top-row {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 10px;
         padding: 0;
-        width: 100%;
-        align-items: center;
     }
 
+    /* ===== UNIVERSAL BOX WIDTH (หัวใจของ layout) ===== */
     .box-legend-new,
-    .box-layers-new {
-        width: calc(100% - 16px);   /* ⬅️ กว้างเท่ากัน */
-        margin: 0 auto;
-        flex: none;
-        padding: 10px;
+    .box-layers-new,
+    #windy {
+        width: 92%;
+        max-width: 92%;
+        margin-left: auto;
+        margin-right: auto;
         border-radius: 14px;
     }
 
+    /* ===== LEGEND / LAYERS BOX ===== */
+    .box-legend-new,
+    .box-layers-new {
+        padding: 12px;
+        background: #ffffff;
+    }
+
     .legend-bar {
-        height: 24px;
+        height: 22px;
+        border-radius: 10px;
     }
 
     .legend-item {
@@ -404,28 +422,27 @@
 
     .btn-toggle {
         font-size: 12px;
-        padding: 8px;
+        padding: 8px 10px;
+        border-radius: 10px;
     }
 
-    /* ===== Map ===== */
+    /* ===== MAP ===== */
     #windy {
-        width: calc(100% - 16px);   /* ⬅️ เท่ากล่องอื่น */
-        margin: 0 auto;
-        height: 38vh;
-        min-height: 240px;
-        border-radius: 14px;
+        height: 32vh;          /* 🔥 สั้นลง ไม่ทับกล่อง */
+        min-height: 200px;
+        overflow: hidden;
     }
 
-    /* ===== Info panel ===== */
+    /* ===== INFO PANEL (BOTTOM SHEET) ===== */
     #info-panel {
         position: fixed;
         left: 0;
-        bottom: -48vh;
+        bottom: -42vh;
         width: 100%;
-        height: 48vh;
-        padding: 14px;
+        height: 42vh;          /* 🔥 ไม่ใหญ่เกิน */
+        padding: 12px;
 
-        background: rgba(255,255,255,0.95);
+        background: rgba(255, 255, 255, 0.96);
         backdrop-filter: blur(10px);
         border-radius: 20px 20px 0 0;
 
@@ -438,25 +455,25 @@
         bottom: 0;
     }
 
-    /* ===== Chart modal → FULLSCREEN ===== */
+    /* ===== CHART FULLSCREEN MODE ===== */
     #chart-modal {
         display: none;
         position: fixed;
         inset: 0;
-        background: white;     /* ⬅️ เต็มจอจริง */
-        z-index: 10000;
+        background: rgba(15, 23, 42, 0.9);
+        z-index: 9999;
 
-        align-items: stretch;
-        justify-content: stretch;
-        padding: 0;
+        align-items: center;
+        justify-content: center;
     }
 
     #chart-content {
         width: 100%;
-        height: 100%;
-        border-radius: 0;
+        height: 100vh;        /* 🔥 เต็มจอจริง */
         padding: 16px;
         box-sizing: border-box;
+        border-radius: 0;
+        background: #ffffff;
     }
 
     #chart {
