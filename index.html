@@ -336,7 +336,6 @@
         }
 
  /* ===MOBILE APP EXPERIENCE (<= 768px)=== */
-
 @media (max-width: 768px) {
 
     /* ===== Base ===== */
@@ -365,26 +364,31 @@
         height: 100vh;
         padding: 0;
         gap: 8px;
+        align-items: center;   /* ⬅️ จัดกลาง */
     }
 
     #left-side {
         display: flex;
         flex-direction: column;
         gap: 8px;
+        width: 100%;
+        align-items: center;   /* ⬅️ กล่องอยู่กลาง */
     }
 
     /* ===== Top row → vertical ===== */
     #top-row {
         display: flex;
-        flex-direction: column;   /* ⬅️ สำคัญ */
+        flex-direction: column;
         gap: 8px;
-        padding: 8px;
-        height: auto;
+        padding: 0;
+        width: 100%;
+        align-items: center;
     }
 
     .box-legend-new,
     .box-layers-new {
-        width: 100%;
+        width: calc(100% - 16px);   /* ⬅️ กว้างเท่ากัน */
+        margin: 0 auto;
         flex: none;
         padding: 10px;
         border-radius: 14px;
@@ -405,13 +409,14 @@
 
     /* ===== Map ===== */
     #windy {
-        height: 38vh;          /* ⬅️ เล็กลงกว่านี้ไม่ควรแล้ว */
+        width: calc(100% - 16px);   /* ⬅️ เท่ากล่องอื่น */
+        margin: 0 auto;
+        height: 38vh;
         min-height: 240px;
         border-radius: 14px;
-        margin: 0 8px;
     }
 
-    /* ===== Info panel (ใช้ได้แล้ว) ===== */
+    /* ===== Info panel ===== */
     #info-panel {
         position: fixed;
         left: 0;
@@ -433,25 +438,23 @@
         bottom: 0;
     }
 
-    /* ===== Chart modal → FULL EXPERIENCE ===== */
+    /* ===== Chart modal → FULLSCREEN ===== */
     #chart-modal {
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(15, 23, 42, 0.9);
-        z-index: 9999;
+        background: white;     /* ⬅️ เต็มจอจริง */
+        z-index: 10000;
 
-        align-items: center;
-        justify-content: center;
+        align-items: stretch;
+        justify-content: stretch;
         padding: 0;
     }
 
     #chart-content {
         width: 100%;
-        height: 90vh;          /* ⬅️ ใหญ่จริง */
-        max-height: 100%;
+        height: 100%;
         border-radius: 0;
-
         padding: 16px;
         box-sizing: border-box;
     }
