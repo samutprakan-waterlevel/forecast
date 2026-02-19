@@ -21,7 +21,7 @@
             font-family: 'Kanit', sans-serif;
             color: #bef0f5;
             background: linear-gradient(180deg, #a6e3f5 0%,#74b0b2 50% , #137584 75%,#26444e 100%);
-            overflow: hidden;
+            overflow: auto;
             height: 100vh;
             position: relative;
         }
@@ -335,10 +335,115 @@
             transition: all 0.3s ease;
         }
 
+        /* =========================================
+   MOBILE APP EXPERIENCE (<= 768px)
+   ========================================= */
+@media (max-width: 768px) {
+
+    /* ----- Layout control ----- */
+    body {
+        overflow: hidden;
+    }
+
+    #container {
+        flex-direction: column;
+        padding: 0;
+        height: 100vh;
+    }
+
+    #left-side {
+        flex: 1;
+        height: 100%;
+    }
+
+    #top-row {
+        display: none;
+    }
+
+    /* ----- Map full screen ----- */
+    #windy {
+        height: 100vh;
+        border-radius: 0;
+    }
+
+    /* ----- Info panel → bottom sheet ----- */
+    #info-panel {
+        position: fixed;
+        bottom: -100%;
+        left: 0;
+        width: 100%;
+        height: 65vh;
+        background: white;
+        z-index: 9000;
+        border-radius: 22px 22px 0 0;
+        box-shadow: 0 -10px 30px rgba(0,0,0,.35);
+        transition: bottom 0.35s ease;
+        overflow-y: auto;
+        padding-bottom: 40px;
+    }
+
+    #info-panel.show {
+        bottom: 0;
+    }
+
+    /* ----- Chart fullscreen (landscape-friendly) ----- */
+    #chart-modal {
+        padding: 0;
+    }
+
+    #chart-content {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+        padding: 15px;
+    }
+
+    #chart {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    /* ----- Floating toggle button ----- */
+    #mobile-toggle {
+        position: fixed;
+        right: 16px;
+        bottom: 100px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #0284c7;
+        color: white;
+        font-size: 22px;
+        border: none;
+        z-index: 9999;
+        box-shadow: 0 6px 18px rgba(0,0,0,.35);
+        cursor: pointer;
+    }
+
+    /* ----- View state control ----- */
+    body.mobile-map #windy {
+        display: block;
+    }
+
+    body.mobile-map #chart-modal {
+        display: none;
+    }
+
+    body.mobile-chart #windy {
+        display: none;
+    }
+
+    body.mobile-chart #chart-modal {
+        display: flex;
+    }
+}
+
+
     </style>
 </head>
 
 <body>
+
     <div class="bubbles" id="bubbles"></div>
 
     <header>
@@ -483,6 +588,9 @@
         ข้อมูลนี้เป็นผลจากการประมวลผลแบบจำลองพยากรณ์
         มิใช่ข้อมูลตรวจวัดสถานะปัจจุบันแบบเรียลไทม์
     </p>
+    
+        <!-- Mobile toggle Map ↔ Chart -->
+    <button id="mobile-toggle" onclick="toggleMobileView()" style="position: fixed; bottom: 5px; right: 20px; z-index: 1000; background: linear-gradient(135deg, #e2f5ff, #7c95a1); color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px;">📊</button> 
 
     <div id="chart-modal">
         <div id="chart-content">
@@ -953,6 +1061,75 @@ floodWMTS = L.tileLayer(
             b.style.animationDelay = Math.random() * 4 + "s";
             bc.appendChild(b);
         }
+
+/* ============================
+   MOBILE VIEW STATE
+   ============================ */
+let mobileView = "map";
+
+/* ----- initial state ----- */
+if (window.innerWidth <= 768) {
+    document.body.classList.add("mobile-map");
+}
+
+/* ----- Toggle Map ↔ Chart ----- */
+function toggleMobileView() {
+    if (mobileView === "map") {
+        mobileView = "chart";
+        document.body.classList.remove("mobile-map");
+        document.body.classList.add("mobile-chart");
+    } else {
+        mobileView = "map";
+        document.body.classList.remove("mobile-chart");
+        document.body.classList.add("mobile-map");
+    }
+}
+
+/* ----- Swipe gesture ----- */
+let touchStartX = 0;
+
+document.addEventListener("touchstart", e => {
+    touchStartX = e.touches[0].clientX;
+}, { passive: true });
+
+document.addEventListener("touchend", e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 80) {
+        toggleMobileView();
+    }
+}, { passive: true });
+
+/* ----- Open info panel on station select ----- */
+const _openStationPanel = openStationPanel;
+openStationPanel = function(st) {
+    _openStationPanel(st);
+    if (window.innerWidth <= 768) {
+        document.getElementById("info-panel").classList.add("show");
+    }
+};
+
+/* ----- Close info panel by swipe down ----- */
+let sheetStartY = 0;
+const infoPanel = document.getElementById("info-panel");
+
+infoPanel.addEventListener("touchstart", e => {
+    sheetStartY = e.touches[0].clientY;
+}, { passive: true });
+
+infoPanel.addEventListener("touchend", e => {
+    const dy = e.changedTouches[0].clientY - sheetStartY;
+    if (dy > 120) {
+        infoPanel.classList.remove("show");
+    }
+}, { passive: true });
+
+/* ----- Resize chart on rotate ----- */
+window.addEventListener("orientationchange", () => {
+    setTimeout(() => {
+        if (chart) chart.resize();
+    }, 300);
+});
+
     </script>
 </body>
 
