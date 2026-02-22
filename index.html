@@ -376,8 +376,7 @@
             display: flex;
             flex-direction: column;
             width: 96% !important; 
-            height: 100% !important;
-            justify-content: flex-start;
+            height: auto !important;
             margin: 0 auto;         
             gap: 10px;
             padding: 0;
@@ -391,7 +390,7 @@
             flex: none; 
             gap: 10px;
             width: 100%;
-            height: 100%; 
+            height: auto; 
         }
 
         /* ===== TOP CONTROLS (STACKED) ===== */
@@ -426,23 +425,16 @@
         .legend-item { font-size: 11px; }
         .btn-toggle { font-size: 12px; padding: 8px; }
 
-        * ตกแต่งหมายเหตุให้แสดงผลแนวตั้งสวยๆ */
-        .mobile-footer-note {
-            width: 96%;
-            margin: 5px auto 15px auto !important; /* เว้นระยะจากขอบล่างนิดหน่อย */
-            text-align: center;
-            color: #ffffff; /* เปลี่ยนสีให้ตัดกับพื้นหลัง */
-            z-index: 10;
-            flex-shrink: 0; /* ป้องกันไม่ให้โดนแผนที่บีบจนแบน */
+        #container > p {
+            width: 96% !important;
+            margin: 10px auto 30px auto !important;
+            text-align: left;
+            font-size: 13px;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            line-height: 1.4;
         }
 
-        .mobile-footer-note p {
-            font-size: 11px !important; /* ย่อขนาดให้พอดีจอ */
-            line-height: 1.5;
-            margin: 0;
-            padding: 5px;
-        }
-        
         /* ===== MAP (ย่อความสูงให้พอดี ไม่ให้เบียดหน้าจอ) ===== */
         #windy {
             height: 40vh; /* ปรับให้สั้นลงกว่าเดิมนิดหน่อยเพื่อให้เห็นของครบในจอเดียว */
