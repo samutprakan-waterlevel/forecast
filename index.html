@@ -348,7 +348,12 @@
             width: 100%;
             height: 100%;
             overflow-x: hidden;
-            position: fixed; 
+            position: relative; 
+        }
+
+        body {
+            background: linear-gradient(180deg, #a6e3f5 0%,#74b0b2 50% , #137584 75%,#26444e 100%) !important;
+            background-attachment: fixed;
         }
 
         /* ===== HEADER ===== */
@@ -369,10 +374,14 @@
         /* ===== MAIN STACK LAYOUT ===== */
         #container {
             display: flex;
-            flex-direction: column; /* เรียงแนวตั้ง */
+            flex-direction: column;
+            width: 94% !important; 
+            margin: 0 auto;        /
+            height: 65vh !important; 
+            gap: 10px;
             padding: 0;
-            gap: 10px; /* ระยะห่างระหว่างกลุ่มกล่อง */
-            width: 100%;
+            position: relative;
+            z-index: 5;            
         }
 
         #left-side {
