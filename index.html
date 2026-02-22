@@ -347,13 +347,13 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden; 
-            position: fixed;
+            overflow-x: hidden;
+            position: fixed; 
         }
 
         /* ===== HEADER ===== */
         header {
-            padding: 10px;
+            padding: 12px;
             text-align: center;
         }
 
@@ -366,58 +366,54 @@
             font-size: 14px;
         }
 
+        /* ===== MAIN STACK LAYOUT ===== */
+        #container {
+            display: flex;
+            flex-direction: column; /* เรียงแนวตั้ง */
+            padding: 0;
+            gap: 10px; /* ระยะห่างระหว่างกลุ่มกล่อง */
+            width: 100%;
+        }
+
+        #left-side {
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* ระยะห่างระหว่างกล่องสัญลักษณ์กับแผนที่ */
+            width: 100%;
+        }
 
         /* ===== TOP CONTROLS (STACKED) ===== */
         #top-row {
             display: flex;
             flex-direction: column;
             gap: 10px;
-            padding: 2;
+            padding: 0;
             width: 100%;
+        }
+
+        /* บังคับให้ทุกกล่องกว้าง 94% และจัดกึ่งกลางให้ขอบตรงกันเป๊ะ */
+        .box-legend-new,
+        .box-layers-new,
+        #windy {
+            width: 94% !important;
+            margin: 0 auto !important;
+            box-sizing: border-box; /* บังคับให้ padding ไม่ทำให้กล่องขยายเกิน 94% */
         }
 
         .box-legend-new,
         .box-layers-new {
-            width: 94%;
-            margin: 0 auto;
             padding: 12px;
             border-radius: 14px;
         }
 
-        .legend-bar {
-            height: 24px;
-        }
+        /* ค่าดั้งเดิมที่คุณต้องการคงไว้ */
+        .legend-bar { height: 24px; }
+        .legend-item { font-size: 11px; }
+        .btn-toggle { font-size: 12px; padding: 8px; }
 
-        .legend-item {
-            font-size: 11px;
-        }
-
-        .btn-toggle {
-            font-size: 12px;
-            padding: 8px;
-        }
-
-        /* ===== MAIN STACK LAYOUT ===== */
-        #container {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            gap: 10px;      
-            padding: 0;
-            margin: 0;
-        }
-
-        #left-side {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-        }
-
-        /* ===== MAP (พอดีจอ ไม่ต้องเลื่อน) ===== */
+        /* ===== MAP (ย่อความสูงให้พอดี ไม่ให้เบียดหน้าจอ) ===== */
         #windy {
-            width: 94%;
-            margin: 0 auto;
-            height: 45vh;          /* ⬅️ พอดีจอมือถือ */
+            height: 35vh; /* ปรับให้สั้นลงกว่าเดิมนิดหน่อยเพื่อให้เห็นของครบในจอเดียว */
             min-height: 260px;
             border-radius: 14px;
         }
