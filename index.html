@@ -387,8 +387,10 @@
         #left-side {
             display: flex;
             flex-direction: column;
-            gap: 10px; /* ระยะห่างระหว่างกล่องสัญลักษณ์กับแผนที่ */
+            flex: none; 
+            gap: 10px;
             width: 100%;
+            height: 100%; 
         }
 
         /* ===== TOP CONTROLS (STACKED) ===== */
@@ -397,6 +399,7 @@
             flex-direction: column;
             gap: 10px;
             padding: 0;
+            height: auto;
             width: 100%;
         }
 
@@ -407,12 +410,14 @@
             width: 94% !important;
             margin: 0 auto !important;
             box-sizing: border-box; /* บังคับให้ padding ไม่ทำให้กล่องขยายเกิน 94% */
+            flex: none;
         }
 
         .box-legend-new,
         .box-layers-new {
             padding: 12px;
             border-radius: 14px;
+            background: rgba(255, 255, 255, 0.95);
         }
 
         /* ค่าดั้งเดิมที่คุณต้องการคงไว้ */
