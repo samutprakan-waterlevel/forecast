@@ -731,12 +731,16 @@ floodWMTS = L.tileLayer(
                     interactive: false
                 }).addTo(map);
             });
-
-            // ดึงข้อมูลสถานี
             fetch('stations_forecast_full.json').then(r => r.json()).then(data => {
                 allStations = Object.values(data);
                 allStations.forEach(st => {
-                    const color = getColorByStatus(st.test[st.test.length - 1].Status);
+                    // --- จุดที่แก้ไข: เปลี่ยน st.test เป็น st.test_df ---
+                    const testData = st.test_df || []; 
+                    const lastStatus = testData.length > 0 ? testData[testData.length - 1].Status : "ไม่ทราบสถานะ";
+                    
+                    const color = getColorByStatus(lastStatus);
+                    // ----------------------------------------------
+
                     const marker = L.marker([st.lat, st.lon], {
                         icon: L.divIcon({ 
                             className: 'station-marker', 
@@ -761,7 +765,6 @@ floodWMTS = L.tileLayer(
                     });
                 });
             }).catch(err => console.error("Error loading stations:", err));
-
 
         const searchInput = document.getElementById('st-search');
         const searchResults = document.getElementById('search-results');
@@ -889,7 +892,11 @@ floodWMTS = L.tileLayer(
         // Station Panel & Data Functions
         function openStationPanel(st) {
             currentStation = st;
-            const latest = [...st.test].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+            // เปลี่ยนจาก st.test เป็น st.test_df
+            const dataList = st.test_df || []; 
+            if (dataList.length === 0) return;
+
+            const latest = [...dataList].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
 
             document.getElementById("info-empty").style.display = "none";
             document.getElementById("info-content").style.display = "block";
@@ -933,12 +940,28 @@ floodWMTS = L.tileLayer(
             const ctx = document.getElementById("chart").getContext("2d");
             if (chart) chart.destroy();
 
-            const sortedData = [...st.test].sort((a, b) => new Date(a.date) - new Date(b.date));
+            // 1. รวมข้อมูลจาก test_df และ future_df และเรียงวันที่
+            const allData = [...(st.test_df || []), ...(st.future_df || [])];
+            const sortedData = allData.sort((a, b) => new Date(a.date) - new Date(b.date));
             const labels = sortedData.map(d => d.date);
             currentChartData = sortedData;
 
-            const actual = sortedData.map(d => (d.date <= "2025-10-31") ? d.Actual : null);
-            const forecast = sortedData.map(d => (d.date >= "2025-11-01") ? d.Predicted : null);
+            // 2. จัดการข้อมูลเส้น (หัวใจสำคัญคือจุดเชื่อมวันที่ 2025-10-31)
+            const actual = sortedData.map(d => {
+                // เส้นจริงแสดงจนถึงวันที่ 31
+                if (d.date <= "2025-10-31") {
+                    return (d.Actual !== undefined && d.Actual !== null) ? d.Actual : d.Predicted;
+                }
+                return null;
+            });
+
+            const forecast = sortedData.map(d => {
+                // เส้นพยากรณ์เริ่มตั้งแต่คืนวันที่ 31 เพื่อให้เชื่อมกับจุดสุดท้ายของเส้นจริง
+                if (d.date >= "2025-10-31") {
+                    return d.Predicted;
+                }
+                return null;
+            });
 
             const bank = st.bank_level_m;
             const bed = st.bed_level_m;
@@ -947,26 +970,26 @@ floodWMTS = L.tileLayer(
                 type: "line",
                 data: {
                     labels: labels,
-                    datasets: [{
-                            label: "ระดับน้ำจริง",
+                    datasets: [
+                        {
+                            label: "ระดับน้ำจริง (ม.รทก.)",
                             data: actual,
                             borderColor: "#1e40af",
                             borderWidth: 3,
-                            pointRadius: 5,
-                            hitRadius: 10,
+                            pointRadius: 3,
                             fill: false,
-                            tension: 0.1
+                            tension: 0.1,
+                            spanGaps: false // บังคับไม่ให้ลากข้ามค่า null
                         },
                         {
-                            label: "พยากรณ์ล่วงหน้า (รายวัน)",
+                            label: "พยากรณ์ล่วงหน้า (ม.รทก.)",
                             data: forecast,
                             borderColor: "#f97316",
-                            backgroundColor: "#f97316",
-                            pointRadius: 5,
-                            hitRadius: 10,
-                            showLine: true,
-                            borderDash: [5, 5],
-                            tension: 0.1
+                            borderDash: [5, 5], 
+                            pointRadius: 3,
+                            fill: false,
+                            tension: 0.1,
+                            spanGaps: false // บังคับไม่ให้ลากข้ามค่า null
                         }
                     ]
                 },
