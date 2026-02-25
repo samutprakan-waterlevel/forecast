@@ -1033,7 +1033,7 @@ floodWMTS = L.tileLayer(
                                     if (d) {
                                         lines.push(`ความเสี่ยง: ${d.Status}`);
                                         const pct = d["Predicted_%"] !== undefined ? d["Predicted_%"] : ((val - bed) / (bank - bed) * 100);
-                                        lines.push(`ความจุลำน้ำ: ${pct.toFixed(2)} %`);
+                                        lines.push(`ร้อยละระดับน้ำ: ${pct.toFixed(2)} %`);
                                     }
                                     return lines;
                                 }
