@@ -1022,7 +1022,17 @@ floodWMTS = L.tileLayer(
                         document.getElementById("st-pct-text").innerText = pct.toFixed(2) + " %";
                     },
                     plugins: {
-                        tooltip: {
+                        tooltip: { 
+
+                            titleFont: {
+                                family: 'Kanit',
+                                size: 14
+                            },
+                            bodyFont: {
+                                family: 'Kanit',
+                                size: 13
+                            },
+                            
                             callbacks: {
                                 label: function(context) {
                                     const idx = context.dataIndex;
